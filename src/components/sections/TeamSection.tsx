@@ -1,18 +1,27 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import Image from "next/image";
 import { FaLinkedin, FaTwitter } from "react-icons/fa";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { teamMembers } from "@/data/team";
+import { useGamificationStore } from "@/stores/gamification-store";
 
 export function TeamSection() {
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 });
+  const { visitSection } = useGamificationStore();
+
+  useEffect(() => {
+    if (inView) visitSection("team");
+  }, [inView, visitSection]);
 
   return (
-    <section className="relative py-24 bg-gray-950">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="relative py-24 bg-gray-950 overflow-hidden">
+      <div className="absolute inset-0 grid-bg opacity-100 pointer-events-none" />
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
           eyebrow="Driving Force"
           title="The Minds Behind I-PAC"
@@ -29,21 +38,22 @@ export function TeamSection() {
               key={member.id}
               initial={{ opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="group relative rounded-2xl overflow-hidden bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-all duration-300"
+              transition={{ duration: 0.5, delay: index * 0.08 }}
+              className="group relative rounded-2xl overflow-hidden bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-all duration-500 hover-lift"
             >
               <div className="relative aspect-[4/3] overflow-hidden">
                 <Image
                   src={member.imageUrl}
                   alt={member.name}
                   fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/50 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/30 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 {member.social && (
-                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
                     {member.social.linkedin && (
                       <a
                         href={member.social.linkedin}
@@ -81,6 +91,8 @@ export function TeamSection() {
                   {member.bio}
                 </p>
               </div>
+
+              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </motion.div>
           ))}
         </div>

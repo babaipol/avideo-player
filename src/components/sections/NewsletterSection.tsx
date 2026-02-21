@@ -4,12 +4,15 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { FiMail, FiArrowRight, FiCheckCircle } from "react-icons/fi";
+import { MagneticButton } from "@/components/ui/MagneticButton";
+import { useGamificationStore } from "@/stores/gamification-store";
 
 export function NewsletterSection() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3 });
+  const { unlockAchievement } = useGamificationStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,13 +21,16 @@ export function NewsletterSection() {
     await new Promise((r) => setTimeout(r, 1000));
     setLoading(false);
     setSubmitted(true);
+    unlockAchievement("newsletter");
   };
 
   return (
     <section className="relative py-24 bg-gray-950 overflow-hidden">
       <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-cyan-500/20 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-cyan-500/15 blur-3xl" />
       </div>
+
+      <div className="absolute inset-0 grid-bg opacity-50" />
 
       <div
         ref={ref}
@@ -45,13 +51,21 @@ export function NewsletterSection() {
           <p className="text-gray-400 mb-8 leading-relaxed">
             Subscribe to receive updates on our campaigns, political insights,
             and opportunities to contribute to India&apos;s democratic journey.
+            <span className="block mt-2 text-cyan-400 text-sm">
+              🎯 Unlock the Engaged Citizen achievement + 75 XP
+            </span>
           </p>
 
           {submitted ? (
-            <div className="flex items-center justify-center gap-3 text-green-400 text-lg">
-              <FiCheckCircle size={24} />
-              <span>You&apos;re subscribed! Thank you.</span>
-            </div>
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="flex flex-col items-center gap-3 text-green-400"
+            >
+              <FiCheckCircle size={32} />
+              <span className="text-lg font-semibold">You&apos;re subscribed! Thank you.</span>
+              <span className="text-sm text-cyan-400">🏅 Achievement unlocked: Engaged Citizen!</span>
+            </motion.div>
           ) : (
             <form
               onSubmit={handleSubmit}
@@ -64,15 +78,22 @@ export function NewsletterSection() {
                 required
                 className="flex-1 px-5 py-3 rounded-full bg-white/10 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
                 placeholder="Enter your email"
+                aria-label="Email address"
               />
-              <button
+              <MagneticButton
                 type="submit"
                 disabled={loading}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold hover:from-cyan-400 hover:to-blue-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+                variant="primary"
               >
-                {loading ? "Subscribing..." : "Subscribe"}
-                {!loading && <FiArrowRight size={16} />}
-              </button>
+                {loading ? (
+                  "Subscribing..."
+                ) : (
+                  <>
+                    Subscribe
+                    <FiArrowRight size={16} />
+                  </>
+                )}
+              </MagneticButton>
             </form>
           )}
 

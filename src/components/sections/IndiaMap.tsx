@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { campaigns } from "@/data/campaigns";
+import { useGamificationStore } from "@/stores/gamification-store";
 
 const statePositions: Record<string, { x: number; y: number; label: string }> =
   {
@@ -43,6 +44,25 @@ const statesWithCampaigns = new Set(campaigns.map((c) => c.state));
 
 export function IndiaMap() {
   const [hoveredState, setHoveredState] = useState<string | null>(null);
+  const [hoveredCount, setHoveredCount] = useState(0);
+  const hoveredStatesRef = useRef<Set<string>>(new Set());
+  const { unlockAchievement, visitSection } = useGamificationStore();
+
+  useEffect(() => {
+    visitSection("map");
+  }, [visitSection]);
+
+  const handleStateHover = (state: string) => {
+    setHoveredState(state);
+    if (!hoveredStatesRef.current.has(state)) {
+      hoveredStatesRef.current.add(state);
+      const count = hoveredStatesRef.current.size;
+      setHoveredCount(count);
+      if (count >= 5) {
+        unlockAchievement("map-explorer");
+      }
+    }
+  };
 
   const relatedCampaigns = hoveredState
     ? campaigns.filter((c) => c.state === hoveredState)
@@ -61,10 +81,20 @@ export function IndiaMap() {
         <div className="grid lg:grid-cols-5 gap-8 items-start">
           <div className="lg:col-span-3">
             <div className="relative w-full max-w-md mx-auto">
+              {hoveredCount >= 3 && hoveredCount < 5 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute -top-8 left-0 right-0 text-center text-xs text-cyan-400"
+                >
+                  Explore {5 - hoveredCount} more states to unlock Map Explorer!
+                </motion.div>
+              )}
               <svg
                 viewBox="0 0 100 85"
                 className="w-full"
                 aria-label="Map of India showing I-PAC campaign presence"
+                role="img"
               >
                 {Object.entries(statePositions).map(([state, pos]) => {
                   const hasCampaign = statesWithCampaigns.has(state);
@@ -72,18 +102,30 @@ export function IndiaMap() {
                   return (
                     <g
                       key={state}
-                      onMouseEnter={() => setHoveredState(state)}
+                      onMouseEnter={() => handleStateHover(state)}
                       onMouseLeave={() => setHoveredState(null)}
                       className="cursor-pointer"
                       aria-label={state}
                       role="button"
                       tabIndex={0}
-                      onFocus={() => setHoveredState(state)}
+                      onFocus={() => handleStateHover(state)}
                       onBlur={() => setHoveredState(null)}
                       onKeyDown={(e) =>
-                        e.key === "Enter" && setHoveredState(state)
+                        e.key === "Enter" && handleStateHover(state)
                       }
                     >
+                      {isHovered && (
+                        <circle
+                          cx={pos.x}
+                          cy={pos.y}
+                          r="7"
+                          fill="none"
+                          stroke="#22d3ee"
+                          strokeWidth="0.3"
+                          opacity="0.3"
+                          className="animate-ping"
+                        />
+                      )}
                       <circle
                         cx={pos.x}
                         cy={pos.y}
@@ -117,18 +159,6 @@ export function IndiaMap() {
                           {pos.label}
                         </text>
                       )}
-                      {isHovered && (
-                        <circle
-                          cx={pos.x}
-                          cy={pos.y}
-                          r="6"
-                          fill="none"
-                          stroke="#22d3ee"
-                          strokeWidth="0.5"
-                          opacity="0.5"
-                          className="animate-ping"
-                        />
-                      )}
                     </g>
                   );
                 })}
@@ -148,13 +178,14 @@ export function IndiaMap() {
           </div>
 
           <div className="lg:col-span-2">
-            <AnimatePresenceWrapper>
+            <AnimatePresence mode="wait">
               {hoveredState ? (
                 <motion.div
                   key={hoveredState}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
                   className="p-6 rounded-2xl bg-white/5 border border-white/10"
                 >
                   <h3 className="text-xl font-bold text-white mb-2">
@@ -169,7 +200,7 @@ export function IndiaMap() {
                       {relatedCampaigns.map((c) => (
                         <div
                           key={c.id}
-                          className="p-4 rounded-xl bg-white/5 border border-white/10"
+                          className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-colors"
                         >
                           <div className="font-semibold text-white text-sm mb-1">
                             {c.title}
@@ -218,16 +249,31 @@ export function IndiaMap() {
                   <div className="text-xs text-gray-500 uppercase tracking-wider">
                     States Covered
                   </div>
+                  {hoveredCount > 0 && (
+                    <div className="mt-4 pt-4 border-t border-white/10">
+                      <div className="text-xs text-gray-500 mb-2">
+                        States Explored: {hoveredCount}
+                      </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full"
+                          animate={{ width: `${Math.min((hoveredCount / 5) * 100, 100)}%` }}
+                          transition={{ duration: 0.4 }}
+                        />
+                      </div>
+                      <div className="text-xs text-cyan-400 mt-1">
+                        {hoveredCount < 5
+                          ? `${5 - hoveredCount} more to unlock Map Explorer!`
+                          : "🗺️ Map Explorer unlocked!"}
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )}
-            </AnimatePresenceWrapper>
+            </AnimatePresence>
           </div>
         </div>
       </div>
     </section>
   );
-}
-
-function AnimatePresenceWrapper({ children }: { children: React.ReactNode }) {
-  return <AnimatePresence mode="wait">{children}</AnimatePresence>;
 }
