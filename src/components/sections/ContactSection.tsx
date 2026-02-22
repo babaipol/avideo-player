@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import {
@@ -18,14 +18,20 @@ import {
   FaLinkedin,
 } from "react-icons/fa";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { Button } from "@/components/ui/Button";
+import { MagneticButton } from "@/components/ui/MagneticButton";
 import { SOCIAL_LINKS } from "@/lib/constants";
 import { offices } from "@/data/offices";
+import { useGamificationStore } from "@/stores/gamification-store";
 
 export function ContactSection() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 });
+  const { visitSection } = useGamificationStore();
+
+  useEffect(() => {
+    if (inView) visitSection("contact");
+  }, [inView, visitSection]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -53,9 +59,14 @@ export function ContactSection() {
           >
             {submitted ? (
               <div className="flex flex-col items-center justify-center h-full py-16 text-center">
-                <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-4">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", damping: 15, stiffness: 200 }}
+                  className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-4"
+                >
                   <FiCheckCircle size={32} className="text-green-400" />
-                </div>
+                </motion.div>
                 <h3 className="text-xl font-bold text-white mb-2">
                   Message Sent!
                 </h3>
@@ -65,7 +76,7 @@ export function ContactSection() {
                 </p>
                 <button
                   onClick={() => setSubmitted(false)}
-                  className="mt-6 text-cyan-400 hover:text-cyan-300 text-sm"
+                  className="mt-6 text-cyan-400 hover:text-cyan-300 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded"
                 >
                   Send another message
                 </button>
@@ -167,7 +178,7 @@ export function ContactSection() {
                   />
                 </div>
 
-                <Button
+                <MagneticButton
                   type="submit"
                   variant="primary"
                   fullWidth
@@ -180,7 +191,7 @@ export function ContactSection() {
                       Send Message <FiSend size={16} />
                     </>
                   )}
-                </Button>
+                </MagneticButton>
               </form>
             )}
           </motion.div>
@@ -194,14 +205,17 @@ export function ContactSection() {
             {offices.map((office) => (
               <div
                 key={office.id}
-                className="p-6 rounded-2xl bg-white/5 border border-white/10"
+                className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-cyan-500/20 transition-colors"
               >
                 <h3 className="text-white font-bold text-lg mb-4">
                   {office.city} Office
                 </h3>
                 <div className="space-y-3">
                   <div className="flex gap-3 text-sm text-gray-400">
-                    <FiMapPin className="text-cyan-400 flex-shrink-0 mt-0.5" size={16} />
+                    <FiMapPin
+                      className="text-cyan-400 flex-shrink-0 mt-0.5"
+                      size={16}
+                    />
                     <span>{office.address}</span>
                   </div>
                   {office.phone && (

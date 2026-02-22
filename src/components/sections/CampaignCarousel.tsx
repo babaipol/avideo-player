@@ -1,16 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { FiChevronLeft, FiChevronRight, FiMapPin, FiCalendar } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiMapPin, FiCalendar, FiArrowUpRight } from "react-icons/fi";
 import { Badge } from "@/components/ui/Badge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { GradientText } from "@/components/typography/GradientText";
 import { campaigns } from "@/data/campaigns";
+import { useGamificationStore } from "@/stores/gamification-store";
 
 export function CampaignCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [viewedCampaigns, setViewedCampaigns] = useState<Set<string>>(new Set());
+  const { unlockAchievement, visitSection } = useGamificationStore();
+
+  useEffect(() => {
+    visitSection("campaigns");
+    setViewedCampaigns((prev) => {
+      const newViewed = new Set(prev);
+      newViewed.add(campaigns[activeIndex].id);
+      if (newViewed.size >= campaigns.length) {
+        unlockAchievement("campaign-scholar");
+      }
+      return newViewed;
+    });
+  }, [activeIndex, unlockAchievement, visitSection]);
 
   const prev = () => {
     setDirection(-1);
@@ -24,9 +40,27 @@ export function CampaignCarousel() {
 
   const campaign = campaigns[activeIndex];
 
+  const cardVariants = {
+    enter: (dir: number) => ({
+      x: dir > 0 ? 120 : -120,
+      opacity: 0,
+      scale: 0.95,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      scale: 1,
+    },
+    exit: (dir: number) => ({
+      x: dir > 0 ? -120 : 120,
+      opacity: 0,
+      scale: 0.95,
+    }),
+  };
+
   return (
     <section className="relative py-24 bg-gray-950 overflow-hidden">
-      <div className="absolute inset-0 opacity-20">
+      <div className="absolute inset-0 opacity-15">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-blue-600/20 blur-3xl" />
       </div>
 
@@ -43,27 +77,33 @@ export function CampaignCarousel() {
             <motion.div
               key={campaign.id}
               custom={direction}
-              initial={{ opacity: 0, x: direction * 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction * -100 }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
+              variants={cardVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               className="grid lg:grid-cols-2 gap-8 items-center"
             >
-              <div className="relative rounded-2xl overflow-hidden aspect-video bg-gray-900">
+              <div className="relative rounded-2xl overflow-hidden aspect-video bg-gray-900 group">
                 <Image
                   src={campaign.imageUrl}
                   alt={campaign.title}
                   fill
-                  className="object-cover"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
                   sizes="(max-width: 1024px) 100vw, 50vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-4 flex gap-2">
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute bottom-4 left-4 flex gap-2 flex-wrap">
                   {campaign.tags.map((tag) => (
                     <Badge key={tag} variant="cyan">
                       {tag}
                     </Badge>
                   ))}
+                </div>
+
+                <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all cursor-pointer">
+                  <FiArrowUpRight size={14} />
                 </div>
               </div>
 
@@ -80,18 +120,21 @@ export function CampaignCarousel() {
                     </span>
                   </div>
                   <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-                    {campaign.title}
+                    <GradientText from="#ffffff" to="#e2e8f0">
+                      {campaign.title}
+                    </GradientText>
                   </h3>
                   <p className="text-gray-400 leading-relaxed">
                     {campaign.description}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   {campaign.stats.map((stat) => (
-                    <div
+                    <motion.div
                       key={stat.label}
-                      className="p-4 rounded-xl bg-white/5 border border-white/10 text-center"
+                      className="p-4 rounded-xl bg-white/5 border border-white/10 text-center hover:border-cyan-500/30 transition-colors duration-300"
+                      whileHover={{ scale: 1.03 }}
                     >
                       <div className="text-xl font-bold text-cyan-400">
                         {stat.value}
@@ -99,7 +142,7 @@ export function CampaignCarousel() {
                       <div className="text-xs text-gray-500 mt-1">
                         {stat.label}
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
 
@@ -149,7 +192,7 @@ export function CampaignCarousel() {
               ))}
             </div>
 
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 tabular-nums">
               {String(activeIndex + 1).padStart(2, "0")} /{" "}
               {String(campaigns.length).padStart(2, "0")}
             </span>

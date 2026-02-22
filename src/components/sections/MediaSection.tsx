@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { FiExternalLink, FiPlay, FiFileText, FiBookmark } from "react-icons/fi";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { newsItems } from "@/data/news";
 import type { NewsItem } from "@/types";
+import { useGamificationStore } from "@/stores/gamification-store";
 
 type Category = "all" | "news" | "press" | "video";
 
@@ -19,6 +20,11 @@ const categoryIcons: Record<string, React.ElementType> = {
 export function MediaSection() {
   const [activeCategory, setActiveCategory] = useState<Category>("all");
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 });
+  const { visitSection } = useGamificationStore();
+
+  useEffect(() => {
+    if (inView) visitSection("media");
+  }, [inView, visitSection]);
 
   const filtered =
     activeCategory === "all"
@@ -33,7 +39,7 @@ export function MediaSection() {
   ];
 
   return (
-    <section className="relative py-24 bg-gray-950">
+    <section className="relative py-24 bg-gray-950 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
           eyebrow="Media"
@@ -89,8 +95,8 @@ function NewsCard({
       rel="noopener noreferrer"
       initial={{ opacity: 0, y: 20 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.4, delay: index * 0.08 }}
-      className="group flex flex-col p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-cyan-500/30 hover:bg-white/8 transition-all duration-300"
+      transition={{ duration: 0.4, delay: index * 0.06 }}
+      className="group flex flex-col p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-cyan-500/30 hover:bg-white/8 transition-all duration-300 hover-lift"
     >
       <div className="flex items-start justify-between mb-3">
         <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
